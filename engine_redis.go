@@ -1153,6 +1153,7 @@ func (s *shard) Publish(ch string, pub *Publication, opts *ChannelOptions) error
 		select {
 		case s.pubCh <- pr:
 		case <-timer.C:
+			timer.MarkRead()
 			return errRedisOpTimeout
 		}
 	}
@@ -1193,6 +1194,7 @@ func (s *shard) PublishJoin(ch string, join *Join, opts *ChannelOptions) error {
 		select {
 		case s.pubCh <- pr:
 		case <-timer.C:
+			timer.MarkRead()
 			return errRedisOpTimeout
 		}
 	}
@@ -1233,6 +1235,7 @@ func (s *shard) PublishLeave(ch string, leave *Leave, opts *ChannelOptions) erro
 		select {
 		case s.pubCh <- pr:
 		case <-timer.C:
+			timer.MarkRead()
 			return errRedisOpTimeout
 		}
 	}
@@ -1258,6 +1261,7 @@ func (s *shard) PublishControl(data []byte) error {
 		select {
 		case s.pubCh <- pr:
 		case <-timer.C:
+			timer.MarkRead()
 			return errRedisOpTimeout
 		}
 	}
@@ -1273,6 +1277,7 @@ func (s *shard) sendSubscribe(r subRequest) error {
 		select {
 		case s.subCh <- r:
 		case <-timer.C:
+			timer.MarkRead()
 			return errRedisOpTimeout
 		}
 	}
@@ -1306,6 +1311,7 @@ func (s *shard) getDataResponse(r dataRequest) *dataResponse {
 		select {
 		case s.dataCh <- r:
 		case <-timer.C:
+			timer.MarkRead()
 			return &dataResponse{nil, errRedisOpTimeout}
 		}
 	}
