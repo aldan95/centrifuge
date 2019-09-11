@@ -15,9 +15,7 @@ func AcquireTimer(d time.Duration) *PoolTimer {
 		return newTimer(d)
 	}
 	tm := v.(*PoolTimer)
-	if tm.Reset(d) {
-		panic("Received an active timer from the pool!")
-	}
+	tm.Reset(d)
 	return tm
 }
 
@@ -38,14 +36,13 @@ func (t *PoolTimer) MarkRead() {
 }
 
 // Reset timer safely.
-func (t *PoolTimer) Reset(d time.Duration) bool {
+func (t *PoolTimer) Reset(d time.Duration) {
 	stopped := t.Stop()
 	if !stopped && !t.read {
 		<-t.C
 	}
 	t.Timer.Reset(d)
 	t.read = false
-	return stopped
 }
 
 func newTimer(d time.Duration) *PoolTimer {
