@@ -416,7 +416,7 @@ func (n *Node) handleControl(data []byte) error {
 // handlePublication handles messages published into channel and
 // coming from engine. The goal of method is to deliver this message
 // to all clients on this node currently subscribed to channel.
-func (n *Node) handlePublication(ch string, pub *Publication) error {
+func (n *Node) handlePublication(ch string, pub Publication) error {
 	messagesReceivedCount.WithLabelValues("publication").Inc()
 	numSubscribers := n.hub.NumSubscribers(ch)
 	hasCurrentSubscribers := numSubscribers > 0
@@ -432,7 +432,7 @@ func (n *Node) handlePublication(ch string, pub *Publication) error {
 
 // handleJoin handles join messages - i.e. broadcasts it to
 // interested local clients subscribed to channel.
-func (n *Node) handleJoin(ch string, join *proto.Join) error {
+func (n *Node) handleJoin(ch string, join proto.Join) error {
 	messagesReceivedCount.WithLabelValues("join").Inc()
 	hasCurrentSubscribers := n.hub.NumSubscribers(ch) > 0
 	if !hasCurrentSubscribers {
@@ -443,7 +443,7 @@ func (n *Node) handleJoin(ch string, join *proto.Join) error {
 
 // handleLeave handles leave messages - i.e. broadcasts it to
 // interested local clients subscribed to channel.
-func (n *Node) handleLeave(ch string, leave *proto.Leave) error {
+func (n *Node) handleLeave(ch string, leave proto.Leave) error {
 	messagesReceivedCount.WithLabelValues("leave").Inc()
 	hasCurrentSubscribers := n.hub.NumSubscribers(ch) > 0
 	if !hasCurrentSubscribers {
@@ -463,7 +463,7 @@ func (n *Node) publish(ch string, data []byte, info *ClientInfo, opts ...Publish
 		opt(publishOpts)
 	}
 
-	pub := &Publication{
+	pub := Publication{
 		Data: data,
 		Info: info,
 	}
@@ -473,7 +473,7 @@ func (n *Node) publish(ch string, data []byte, info *ClientInfo, opts ...Publish
 	// If history enabled for channel we add Publication to history first and then
 	// publish to Broker.
 	if n.historyManager != nil && !publishOpts.SkipHistory && chOpts.HistorySize > 0 && chOpts.HistoryLifetime > 0 {
-		pub, err := n.historyManager.AddHistory(ch, pub, &chOpts)
+		pub, err := n.historyManager.AddHistory(ch, &pub, &chOpts)
 		if err != nil {
 			return err
 		}
@@ -481,13 +481,13 @@ func (n *Node) publish(ch string, data []byte, info *ClientInfo, opts ...Publish
 			// Publication added to history, no need to handle Publish error here.
 			// In this case we rely on the fact that clients will eventually restore
 			// Publication from history.
-			n.broker.Publish(ch, pub, &chOpts)
+			n.broker.Publish(ch, *pub, chOpts)
 		}
 		return nil
 	}
 	// If no history enabled - just publish to Broker. In this case we want to handle
 	// error as message will be lost forever otherwise.
-	return n.broker.Publish(ch, pub, &chOpts)
+	return n.broker.Publish(ch, pub, chOpts)
 }
 
 // Publish sends data to all clients subscribed on channel. All running nodes
@@ -504,7 +504,7 @@ var (
 
 // publishJoin allows to publish join message into channel when someone subscribes on it
 // or leave message when someone unsubscribes from channel.
-func (n *Node) publishJoin(ch string, join *proto.Join, opts *ChannelOptions) error {
+func (n *Node) publishJoin(ch string, join proto.Join, opts *ChannelOptions) error {
 	if opts == nil {
 		chOpts, ok := n.ChannelOpts(ch)
 		if !ok {
@@ -513,12 +513,12 @@ func (n *Node) publishJoin(ch string, join *proto.Join, opts *ChannelOptions) er
 		opts = &chOpts
 	}
 	messagesSentCount.WithLabelValues("join").Inc()
-	return n.broker.PublishJoin(ch, join, opts)
+	return n.broker.PublishJoin(ch, join, *opts)
 }
 
 // publishLeave allows to publish join message into channel when someone subscribes on it
 // or leave message when someone unsubscribes from channel.
-func (n *Node) publishLeave(ch string, leave *proto.Leave, opts *ChannelOptions) error {
+func (n *Node) publishLeave(ch string, leave proto.Leave, opts *ChannelOptions) error {
 	if opts == nil {
 		chOpts, ok := n.ChannelOpts(ch)
 		if !ok {
@@ -527,7 +527,7 @@ func (n *Node) publishLeave(ch string, leave *proto.Leave, opts *ChannelOptions)
 		opts = &chOpts
 	}
 	messagesSentCount.WithLabelValues("leave").Inc()
-	return n.broker.PublishLeave(ch, leave, opts)
+	return n.broker.PublishLeave(ch, leave, *opts)
 }
 
 // publishControl publishes message into control channel so all running
@@ -760,7 +760,7 @@ func (n *Node) PresenceStats(ch string) (PresenceStats, error) {
 }
 
 // History returns a slice of last messages published into project channel.
-func (n *Node) History(ch string) ([]*Publication, error) {
+func (n *Node) History(ch string) ([]Publication, error) {
 	actionCount.WithLabelValues("history").Inc()
 	if n.historyManager == nil {
 		return nil, ErrorNotAvailable
@@ -773,7 +773,7 @@ func (n *Node) History(ch string) ([]*Publication, error) {
 }
 
 // recoverHistory recovers publications since last UID seen by client.
-func (n *Node) recoverHistory(ch string, since RecoveryPosition) ([]*Publication, RecoveryPosition, error) {
+func (n *Node) recoverHistory(ch string, since RecoveryPosition) ([]Publication, RecoveryPosition, error) {
 	actionCount.WithLabelValues("recover_history").Inc()
 	if n.historyManager == nil {
 		return nil, RecoveryPosition{}, ErrorNotAvailable
@@ -967,17 +967,17 @@ type brokerEventHandler struct {
 }
 
 // HandlePublication ...
-func (h *brokerEventHandler) HandlePublication(ch string, pub *Publication) error {
+func (h *brokerEventHandler) HandlePublication(ch string, pub Publication) error {
 	return h.node.handlePublication(ch, pub)
 }
 
 // HandleJoin ...
-func (h *brokerEventHandler) HandleJoin(ch string, join *Join) error {
+func (h *brokerEventHandler) HandleJoin(ch string, join Join) error {
 	return h.node.handleJoin(ch, join)
 }
 
 // HandleLeave ...
-func (h *brokerEventHandler) HandleLeave(ch string, leave *Leave) error {
+func (h *brokerEventHandler) HandleLeave(ch string, leave Leave) error {
 	return h.node.handleLeave(ch, leave)
 }
 

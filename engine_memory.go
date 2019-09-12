@@ -50,17 +50,17 @@ func (e *MemoryEngine) Run(h BrokerEventHandler) error {
 
 // Publish adds message into history hub and calls node ClientMsg method to handle message.
 // We don't have any PUB/SUB here as Memory Engine is single node only.
-func (e *MemoryEngine) Publish(ch string, pub *Publication, opts *ChannelOptions) error {
+func (e *MemoryEngine) Publish(ch string, pub Publication, opts ChannelOptions) error {
 	return e.eventHandler.HandlePublication(ch, pub)
 }
 
 // PublishJoin - see engine interface description.
-func (e *MemoryEngine) PublishJoin(ch string, join *Join, opts *ChannelOptions) error {
+func (e *MemoryEngine) PublishJoin(ch string, join Join, opts ChannelOptions) error {
 	return e.eventHandler.HandleJoin(ch, join)
 }
 
 // PublishLeave - see engine interface description.
-func (e *MemoryEngine) PublishLeave(ch string, leave *Leave, opts *ChannelOptions) error {
+func (e *MemoryEngine) PublishLeave(ch string, leave Leave, opts ChannelOptions) error {
 	return e.eventHandler.HandleLeave(ch, leave)
 }
 
@@ -100,7 +100,7 @@ func (e *MemoryEngine) PresenceStats(ch string) (PresenceStats, error) {
 }
 
 // History - see engine interface description.
-func (e *MemoryEngine) History(ch string, filter HistoryFilter) ([]*Publication, RecoveryPosition, error) {
+func (e *MemoryEngine) History(ch string, filter HistoryFilter) ([]Publication, RecoveryPosition, error) {
 	return e.historyHub.get(ch, filter)
 }
 
@@ -209,7 +209,7 @@ func (h *presenceHub) getStats(ch string) (PresenceStats, error) {
 }
 
 type historyItem struct {
-	messages []*Publication
+	messages []Publication
 	expireAt int64
 }
 
@@ -320,12 +320,12 @@ func (h *historyHub) add(ch string, pub *Publication, opts *ChannelOptions) (*Pu
 	heap.Push(&h.queue, &priority.Item{Value: ch, Priority: expireAt})
 	if !ok {
 		h.history[ch] = historyItem{
-			messages: []*Publication{pub},
+			messages: []Publication{*pub},
 			expireAt: expireAt,
 		}
 	} else {
 		messages := h.history[ch].messages
-		messages = append([]*Publication{pub}, messages...)
+		messages = append([]Publication{*pub}, messages...)
 		if len(messages) > opts.HistorySize {
 			messages = messages[0:opts.HistorySize]
 		}
@@ -342,23 +342,23 @@ func (h *historyHub) add(ch string, pub *Publication, opts *ChannelOptions) (*Pu
 	return pub, nil
 }
 
-func (h *historyHub) get(ch string, filter HistoryFilter) ([]*Publication, RecoveryPosition, error) {
+func (h *historyHub) get(ch string, filter HistoryFilter) ([]Publication, RecoveryPosition, error) {
 	h.RLock()
 	defer h.RUnlock()
 	return h.getUnsafe(ch, filter)
 }
 
-func (h *historyHub) getPublications(ch string) []*Publication {
+func (h *historyHub) getPublications(ch string) []Publication {
 	hItem, ok := h.history[ch]
 	if !ok {
-		return []*Publication{}
+		return []Publication{}
 	}
 	if hItem.isExpired() {
 		delete(h.history, ch)
-		return []*Publication{}
+		return []Publication{}
 	}
 	pubs := hItem.messages
-	pubsCopy := make([]*Publication, len(pubs))
+	pubsCopy := make([]Publication, len(pubs))
 	copy(pubsCopy, pubs)
 
 	for i := len(pubsCopy)/2 - 1; i >= 0; i-- {
@@ -368,7 +368,7 @@ func (h *historyHub) getPublications(ch string) []*Publication {
 	return pubsCopy
 }
 
-func (h *historyHub) getUnsafe(ch string, filter HistoryFilter) ([]*Publication, RecoveryPosition, error) {
+func (h *historyHub) getUnsafe(ch string, filter HistoryFilter) ([]Publication, RecoveryPosition, error) {
 	latestSeq, latestGen, latestEpoch := h.getSequence(ch)
 	latestPosition := RecoveryPosition{Seq: latestSeq, Gen: latestGen, Epoch: latestEpoch}
 

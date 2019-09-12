@@ -10,13 +10,13 @@ import (
 // preparedReply is structure for protoTypeoding reply only once.
 type preparedReply struct {
 	ProtoType proto.ProtocolType
-	Reply     *proto.Reply
+	Reply     proto.Reply
 	data      []byte
 	once      sync.Once
 }
 
 // newPreparedReply initializes PreparedReply.
-func newPreparedReply(reply *proto.Reply, protoType proto.ProtocolType) *preparedReply {
+func newPreparedReply(reply proto.Reply, protoType proto.ProtocolType) *preparedReply {
 	return &preparedReply{
 		Reply:     reply,
 		ProtoType: protoType,
@@ -255,7 +255,7 @@ func (h *Hub) removeSub(ch string, c *Client) (bool, error) {
 }
 
 // broadcastPub sends message to all clients subscribed on channel.
-func (h *Hub) broadcastPublication(channel string, pub *Publication, chOpts *ChannelOptions) error {
+func (h *Hub) broadcastPublication(channel string, pub Publication, chOpts *ChannelOptions) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -285,7 +285,7 @@ func (h *Hub) broadcastPublication(channel string, pub *Publication, chOpts *Cha
 				if err != nil {
 					return err
 				}
-				reply := &proto.Reply{
+				reply := proto.Reply{
 					Result: messageBytes,
 				}
 				jsonReply = newPreparedReply(reply, proto.ProtocolTypeJSON)
@@ -301,7 +301,7 @@ func (h *Hub) broadcastPublication(channel string, pub *Publication, chOpts *Cha
 				if err != nil {
 					return err
 				}
-				reply := &proto.Reply{
+				reply := proto.Reply{
 					Result: messageBytes,
 				}
 				protobufReply = newPreparedReply(reply, proto.ProtocolTypeProtobuf)
@@ -313,7 +313,7 @@ func (h *Hub) broadcastPublication(channel string, pub *Publication, chOpts *Cha
 }
 
 // broadcastJoin sends message to all clients subscribed on channel.
-func (h *Hub) broadcastJoin(channel string, join *proto.Join) error {
+func (h *Hub) broadcastJoin(channel string, join proto.Join) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -343,7 +343,7 @@ func (h *Hub) broadcastJoin(channel string, join *proto.Join) error {
 				if err != nil {
 					return err
 				}
-				reply := &proto.Reply{
+				reply := proto.Reply{
 					Result: messageBytes,
 				}
 				jsonReply = newPreparedReply(reply, proto.ProtocolTypeJSON)
@@ -359,7 +359,7 @@ func (h *Hub) broadcastJoin(channel string, join *proto.Join) error {
 				if err != nil {
 					return err
 				}
-				reply := &proto.Reply{
+				reply := proto.Reply{
 					Result: messageBytes,
 				}
 				protobufReply = newPreparedReply(reply, proto.ProtocolTypeProtobuf)
@@ -371,7 +371,7 @@ func (h *Hub) broadcastJoin(channel string, join *proto.Join) error {
 }
 
 // broadcastLeave sends message to all clients subscribed on channel.
-func (h *Hub) broadcastLeave(channel string, leave *proto.Leave) error {
+func (h *Hub) broadcastLeave(channel string, leave proto.Leave) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -401,7 +401,7 @@ func (h *Hub) broadcastLeave(channel string, leave *proto.Leave) error {
 				if err != nil {
 					return err
 				}
-				reply := &proto.Reply{
+				reply := proto.Reply{
 					Result: messageBytes,
 				}
 				jsonReply = newPreparedReply(reply, proto.ProtocolTypeJSON)
@@ -417,7 +417,7 @@ func (h *Hub) broadcastLeave(channel string, leave *proto.Leave) error {
 				if err != nil {
 					return err
 				}
-				reply := &proto.Reply{
+				reply := proto.Reply{
 					Result: messageBytes,
 				}
 				protobufReply = newPreparedReply(reply, proto.ProtocolTypeProtobuf)

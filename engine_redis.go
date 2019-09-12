@@ -439,17 +439,17 @@ func (e *RedisEngine) Run(h BrokerEventHandler) error {
 }
 
 // Publish - see engine interface description.
-func (e *RedisEngine) Publish(ch string, pub *Publication, opts *ChannelOptions) error {
+func (e *RedisEngine) Publish(ch string, pub Publication, opts ChannelOptions) error {
 	return e.getShard(ch).Publish(ch, pub, opts)
 }
 
 // PublishJoin - see engine interface description.
-func (e *RedisEngine) PublishJoin(ch string, join *Join, opts *ChannelOptions) error {
+func (e *RedisEngine) PublishJoin(ch string, join Join, opts ChannelOptions) error {
 	return e.getShard(ch).PublishJoin(ch, join, opts)
 }
 
 // PublishLeave - see engine interface description.
-func (e *RedisEngine) PublishLeave(ch string, leave *Leave, opts *ChannelOptions) error {
+func (e *RedisEngine) PublishLeave(ch string, leave Leave, opts ChannelOptions) error {
 	return e.getShard(ch).PublishLeave(ch, leave, opts)
 }
 
@@ -498,7 +498,7 @@ func (e *RedisEngine) PresenceStats(ch string) (PresenceStats, error) {
 }
 
 // History - see engine interface description.
-func (e *RedisEngine) History(ch string, filter HistoryFilter) ([]*Publication, RecoveryPosition, error) {
+func (e *RedisEngine) History(ch string, filter HistoryFilter) ([]Publication, RecoveryPosition, error) {
 	return e.getShard(ch).History(ch, filter)
 }
 
@@ -852,21 +852,21 @@ func (s *shard) handleRedisClientMessage(eventHandler BrokerEventHandler, chID c
 			pub.Seq = seq
 			pub.Gen = gen
 		}
-		eventHandler.HandlePublication(push.Channel, &pub)
+		eventHandler.HandlePublication(push.Channel, pub)
 	case PushTypeJoin:
 		var join Join
 		err := join.Unmarshal(push.Data)
 		if err != nil {
 			return err
 		}
-		eventHandler.HandleJoin(push.Channel, &join)
+		eventHandler.HandleJoin(push.Channel, join)
 	case PushTypeLeave:
 		var leave Leave
 		err := leave.Unmarshal(push.Data)
 		if err != nil {
 			return err
 		}
-		eventHandler.HandleLeave(push.Channel, &leave)
+		eventHandler.HandleLeave(push.Channel, leave)
 	default:
 	}
 	return nil
@@ -1121,7 +1121,7 @@ var (
 )
 
 // Publish - see engine interface description.
-func (s *shard) Publish(ch string, pub *Publication, opts *ChannelOptions) error {
+func (s *shard) Publish(ch string, pub Publication, opts ChannelOptions) error {
 	eChan := make(chan error, 1)
 
 	data, err := pub.Marshal()
@@ -1160,7 +1160,7 @@ func (s *shard) Publish(ch string, pub *Publication, opts *ChannelOptions) error
 }
 
 // PublishJoin - see engine interface description.
-func (s *shard) PublishJoin(ch string, join *Join, opts *ChannelOptions) error {
+func (s *shard) PublishJoin(ch string, join Join, opts ChannelOptions) error {
 
 	eChan := make(chan error, 1)
 
@@ -1200,7 +1200,7 @@ func (s *shard) PublishJoin(ch string, join *Join, opts *ChannelOptions) error {
 }
 
 // PublishLeave - see engine interface description.
-func (s *shard) PublishLeave(ch string, leave *Leave, opts *ChannelOptions) error {
+func (s *shard) PublishLeave(ch string, leave Leave, opts ChannelOptions) error {
 
 	eChan := make(chan error, 1)
 
@@ -1374,7 +1374,7 @@ func (s *shard) PresenceStats(ch string) (PresenceStats, error) {
 }
 
 // History - see engine interface description.
-func (s *shard) History(ch string, filter HistoryFilter) ([]*Publication, RecoveryPosition, error) {
+func (s *shard) History(ch string, filter HistoryFilter) ([]Publication, RecoveryPosition, error) {
 	historySeqKey := s.gethistorySeqKey(ch)
 	historyEpochKey := s.gethistoryEpochKey(ch)
 	historyKey := s.getHistoryKey(ch)
@@ -1412,7 +1412,7 @@ func (s *shard) History(ch string, filter HistoryFilter) ([]*Publication, Recove
 		epoch = ""
 	}
 
-	var publications []*Publication
+	var publications []Publication
 	if includePubs {
 		publications, err = sliceOfPubs(s, results[2], nil)
 		if err != nil {
@@ -1574,12 +1574,12 @@ func extractPushData(data []byte) ([]byte, uint32, uint32) {
 	return data, seq, gen
 }
 
-func sliceOfPubs(n *shard, result interface{}, err error) ([]*Publication, error) {
+func sliceOfPubs(n *shard, result interface{}, err error) ([]Publication, error) {
 	values, err := redis.Values(result, err)
 	if err != nil {
 		return nil, err
 	}
-	pubs := make([]*Publication, len(values))
+	pubs := make([]Publication, len(values))
 
 	j := 0
 	for i := len(values) - 1; i >= 0; i-- {
@@ -1608,7 +1608,7 @@ func sliceOfPubs(n *shard, result interface{}, err error) ([]*Publication, error
 
 		pub.Seq = seq
 		pub.Gen = gen
-		pubs[j] = &pub
+		pubs[j] = pub
 		j++
 	}
 	return pubs, nil

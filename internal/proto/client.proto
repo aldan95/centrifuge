@@ -131,7 +131,7 @@ message SubscribeResult {
     uint32 seq = 4 [(gogoproto.jsontag) = "seq,omitempty"];
     uint32 gen = 5 [(gogoproto.jsontag) = "gen,omitempty"];
     string epoch = 6 [(gogoproto.jsontag) = "epoch,omitempty"];   
-    repeated Publication publications = 7 [(gogoproto.jsontag) = "publications,omitempty"];
+    repeated Publication publications = 7 [(gogoproto.jsontag) = "publications,omitempty",  (gogoproto.nullable) = false];
     bool recovered = 8 [(gogoproto.jsontag) = "recovered,omitempty"];
 }
 
@@ -180,7 +180,7 @@ message HistoryRequest {
 }
 
 message HistoryResult {
-    repeated Publication publications = 1 [(gogoproto.jsontag) = "publications"];
+    repeated Publication publications = 1 [(gogoproto.jsontag) = "publications", (gogoproto.nullable) = false];
 }
 
 message PingRequest {

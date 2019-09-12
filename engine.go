@@ -14,11 +14,11 @@ type PresenceStats struct {
 // BrokerEventHandler can handle messages received from PUB/SUB system.
 type BrokerEventHandler interface {
 	// Publication must register callback func to handle Publications received.
-	HandlePublication(ch string, pub *Publication) error
+	HandlePublication(ch string, pub Publication) error
 	// Join must register callback func to handle Join messages received.
-	HandleJoin(ch string, join *Join) error
+	HandleJoin(ch string, join Join) error
 	// Leave must register callback func to handle Leave messages received.
-	HandleLeave(ch string, leave *Leave) error
+	HandleLeave(ch string, leave Leave) error
 	// Control must register callback func to handle Control data received.
 	HandleControl([]byte) error
 }
@@ -70,11 +70,11 @@ type Broker interface {
 	// be delivered to all clients subscribed on this channel at moment on
 	// any Centrifuge node. The returned value is channel in which we will
 	// send error as soon as engine finishes publish operation.
-	Publish(ch string, pub *Publication, opts *ChannelOptions) error
+	Publish(ch string, pub Publication, opts ChannelOptions) error
 	// PublishJoin publishes Join Push message into channel.
-	PublishJoin(ch string, join *Join, opts *ChannelOptions) error
+	PublishJoin(ch string, join Join, opts ChannelOptions) error
 	// PublishLeave publishes Leave Push message into channel.
-	PublishLeave(ch string, leave *Leave, opts *ChannelOptions) error
+	PublishLeave(ch string, leave Leave, opts ChannelOptions) error
 	// PublishControl allows to send control command data to all running nodes.
 	PublishControl(data []byte) error
 
@@ -91,7 +91,7 @@ type HistoryManager interface {
 	// History returns a slice of publications published into channel.
 	// HistoryFilter allows to set several filtering options.
 	// History must return Publications with Seq and Gen set.
-	History(ch string, filter HistoryFilter) ([]*Publication, RecoveryPosition, error)
+	History(ch string, filter HistoryFilter) ([]Publication, RecoveryPosition, error)
 	// AddHistory adds Publication to channel history. Storage should
 	// automatically maintain history size and lifetime according to
 	// channel options if needed.
